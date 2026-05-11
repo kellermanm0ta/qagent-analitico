@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}Detalhes da Execução #{{ execucao.id }} - QAgent Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-magnifying-glass text-primary me-2"></i> Execução #{{ execucao.id }}</h2>
+    <a href="{% url 'lista_execucoes' %}" class="btn btn-outline-secondary text-white"><i class="fa-solid fa-arrow-left me-2"></i>Voltar</a>
+</div>
+
+<div class="row mb-4 g-4">
+    <div class="col-md-8">
+        <div class="glass-card p-4 h-100">
+            <h4 class="mb-4">Resumo da Execução</h4>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <p class="text-secondary mb-1">Data</p>
+                    <p class="fw-bold text-white mb-0">{{ execucao.data_execucao|date:"d/m/Y H:i:s" }}</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="text-secondary mb-1">Tempo de Execução</p>
+                    <p class="fw-bold text-white mb-0">{{ execucao.tempo_execucao }} segundos</p>
+                </div>
+                <div class="col-md-4">
+                    <p class="text-secondary mb-1">Status</p>
+                    <p class="mb-0">
+                        {% if execucao.status == 'SUCESSO' %}
+                        <span class="badge badge-success-glow rounded-pill px-3"><i class="fa-solid fa-check me-1"></i> Sucesso</span>
+                        {% elif execucao.status == 'FALHA' %}
+                        <span class="badge badge-danger-glow rounded-pill px-3"><i class="fa-solid fa-xmark me-1"></i> Falha</span>
+                        {% else %}
+                        <span class="badge badge-warning-glow rounded-pill px-3"><i class="fa-solid fa-exclamation me-1"></i> Parcial</span>
+                        {% endif %}
+                    </p>
+                </div>
+                <div class="col-12 mt-4">
+                    <div class="progress" style="height: 10px; background-color: rgba(255,255,255,0.1);">
+                        <div class="progress-bar bg-success" style="width: {% widthratio execucao.testes_sucesso execucao.total_testes 100 %}%"></div>
+                        <div class="progress-bar bg-danger" style="width: {% widthratio execucao.testes_falha execucao.total_testes 100 %}%"></div>
+                    </div>
+                    <div class="d-flex justify-content-between mt-2 small text-secondary">
+                        <span>{{ execucao.testes_sucesso }} Sucesso</span>
+                        <span>{{ execucao.testes_falha }} Falha</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="glass-card p-4 h-100 d-flex flex-column justify-content-center align-items-center text-center">
+            <h4 class="mb-3 w-100 text-start">Cobertura</h4>
+            <div class="stat-icon {% if execucao.cobertura_codigo >= 80 %}success{% elif execucao.cobertura_codigo >= 50 %}warning{% else %}danger{% endif %} rounded-circle" style="width: 100px; height: 100px; font-size: 2rem;">
+                {{ execucao.cobertura_codigo|stringformat:'f' }}%
+            </div>
+        </div>
+    </div>
+</div>
+
+<h4 class="fw-bold mb-3 mt-5"><i class="fa-solid fa-bug text-danger me-2"></i> Logs de Erro ({{ logs.count }})</h4>
+
+{% if logs %}
+<div class="accordion" id="accordionLogs">
+    {% for log in logs %}
+    <div class="accordion-item glass-card mb-3 border-0 overflow-hidden">
+        <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-transparent text-white shadow-none" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ log.id }}">
+                <i class="fa-regular fa-file-code me-2 text-warning"></i>
+                <span class="font-monospace">{{ log.arquivo }}</span>
+                <span class="ms-auto text-secondary small">{{ log.criado_em|date:"H:i:s" }}</span>
+            </button>
+        </h2>
+        <div id="collapse{{ log.id }}" class="accordion-collapse collapse" data-bs-parent="#accordionLogs">
+            <div class="accordion-body border-top border-secondary pt-3">
+                <pre class="bg-dark p-3 rounded text-danger-emphasis mb-0" style="white-space: pre-wrap;"><code>{{ log.mensagem }}</code></pre>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="glass-card p-5 text-center">
+    <div class="stat-icon success mx-auto mb-3" style="width: 64px; height: 64px; font-size: 2rem;">
+        <i class="fa-solid fa-check"></i>
+    </div>
+    <h5 class="text-white">Nenhum erro registrado</h5>
+    <p class="text-secondary">Esta execução foi concluída sem logs de erro.</p>
+</div>
+{% endif %}
+{% endblock %}

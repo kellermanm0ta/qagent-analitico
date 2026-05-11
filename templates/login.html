@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+
+{% block title %}Login - QAgent Analytics{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center align-items-center" style="min-height: 80vh;">
+    <div class="col-md-5">
+        <div class="glass-card p-5 text-center">
+            <div class="mb-4">
+                <i class="fa-solid fa-robot fa-3x text-primary mb-3"></i>
+                <h2 class="fw-bold text-gradient">QAgent Analytics</h2>
+                <p class="text-secondary">Faça login para acessar os dashboards de qualidade.</p>
+            </div>
+
+            <form method="post">
+                {% csrf_token %}
+                {% if form.errors %}
+                <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.3); color: #f87171;">
+                    Usuário ou senha inválidos.
+                </div>
+                {% endif %}
+                
+                <div class="form-floating mb-3">
+                    <input type="text" name="username" class="form-control bg-dark text-white border-secondary" id="id_username" placeholder="Usuário" required>
+                    <label for="id_username" class="text-secondary">Usuário</label>
+                </div>
+                <div class="form-floating mb-4">
+                    <input type="password" name="password" class="form-control bg-dark text-white border-secondary" id="id_password" placeholder="Senha" required>
+                    <label for="id_password" class="text-secondary">Senha</label>
+                </div>
+                
+                <button type="submit" class="btn btn-glow w-100 py-3 fw-bold rounded-3">Entrar no Dashboard</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,69 @@
+{% extends 'base.html' %}
+
+{% block title %}Execuções - QAgent Analytics{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2 class="fw-bold m-0"><i class="fa-solid fa-list text-primary me-2"></i> Todas as Execuções</h2>
+    <a href="{% url 'dashboard' %}" class="btn btn-outline-secondary text-white"><i class="fa-solid fa-arrow-left me-2"></i>Voltar</a>
+</div>
+
+<div class="glass-card p-4">
+    <div class="table-responsive">
+        <table class="table table-dark table-hover align-middle mb-0">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Data</th>
+                    <th>Tempo</th>
+                    <th>Status</th>
+                    <th>Testes (S/F/T)</th>
+                    <th>Cobertura</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for exec in execucoes %}
+                <tr>
+                    <td>#{{ exec.id }}</td>
+                    <td>{{ exec.data_execucao|date:"d/m/Y H:i:s" }}</td>
+                    <td>{{ exec.tempo_execucao }}s</td>
+                    <td>
+                        {% if exec.status == 'SUCESSO' %}
+                        <span class="badge badge-success-glow rounded-pill px-3"><i class="fa-solid fa-check me-1"></i> Sucesso</span>
+                        {% elif exec.status == 'FALHA' %}
+                        <span class="badge badge-danger-glow rounded-pill px-3"><i class="fa-solid fa-xmark me-1"></i> Falha</span>
+                        {% else %}
+                        <span class="badge badge-warning-glow rounded-pill px-3"><i class="fa-solid fa-exclamation me-1"></i> Parcial</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="text-success">{{ exec.testes_sucesso }}</span> / 
+                        <span class="text-danger">{{ exec.testes_falha }}</span> / 
+                        <span class="text-secondary">{{ exec.total_testes }}</span>
+                    </td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="progress flex-grow-1 me-2" style="height: 6px; background-color: rgba(255,255,255,0.1);">
+                                <div class="progress-bar {% if exec.cobertura_codigo >= 80 %}bg-success{% elif exec.cobertura_codigo >= 50 %}bg-warning{% else %}bg-danger{% endif %}" role="progressbar" style="width: {{ exec.cobertura_codigo|stringformat:'f' }}%"></div>
+                            </div>
+                            <span class="small">{{ exec.cobertura_codigo }}%</span>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="{% url 'detalhe_execucao' exec.id %}" class="btn btn-sm btn-outline-primary rounded-pill px-3">Ver Logs</a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-secondary">
+                        <i class="fa-solid fa-inbox fa-3x mb-3"></i>
+                        <p>Nenhuma execução registrada até o momento.</p>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}
