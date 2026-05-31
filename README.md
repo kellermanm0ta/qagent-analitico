@@ -2,6 +2,9 @@
 
 O **QAgent Analytics** é uma aplicação web focada no monitoramento e visualização analítica dos testes e métricas de qualidade gerados pelo QAgent. Este sistema fornece um dashboard intuitivo, lista detalhada de execuções e análise minuciosa de logs de erros, tudo empacotado em uma interface web moderna baseada em Django e Bootstrap 5 (Dark Mode & Glassmorphism).
 
+🎥 **[Assista ao Vídeo de Apresentação do Projeto no YouTube](https://youtu.be/asuBsw0tDgE)**
+
+
 ## 🚀 Tecnologias e Versões Requeridas
 
 *   **Linguagem Principal:** Python 3.12+
