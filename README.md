@@ -7,6 +7,7 @@ O **QAgent Analytics** é uma aplicação web focada no monitoramento e visualiz
 *   **Linguagem Principal:** Python 3.12+
 *   **Framework Web:** Django 5.0+
 *   **Banco de Dados (Desenvolvimento):** SQLite
+*   **API REST:** Django REST Framework
 *   **Frontend:** HTML5, CSS3, Bootstrap 5.3+
 
 ## 💻 Como Iniciar em Ambiente de Desenvolvimento
@@ -78,12 +79,35 @@ Acesse a aplicação no seu navegador através do endereço:
 Você também pode acessar o painel administrativo nativo do Django para gerenciar os dados em:
 👉 **[http://127.0.0.1:8000/admin/](http://127.0.0.1:8000/admin/)**
 
+### 6. Testando Ingestão de Dados via API REST
+
+A aplicação agora conta com uma API para receber dados do QAgent.
+Você pode gerar um arquivo JSON contendo dados aleatórios de teste executando:
+
+```bash
+python gerar_json.py
+```
+
+Isso criará um arquivo `dados_ingestao.json` com múltiplas execuções, que você pode importar diretamente via requisição `POST` para o endpoint `/api/v1/execucoes/` passando o header de autenticação por Token.
+
+## 📡 API REST (Integração)
+
+Endpoint de Ingestão: `POST /api/v1/execucoes/`
+
+Este endpoint aceita receber tanto um objeto JSON único, quanto uma lista de objetos (criação em lote) representando `ExecucaoTeste`, podendo conter de forma aninhada o array de `logs` correspondente a cada execução.
+
+Requer autenticação usando `TokenAuthentication` do Django REST Framework:
+```http
+Authorization: Token <SEU_TOKEN_GERADO>
+```
+
 ## 📂 Estrutura do Projeto
 
-*   `analytics/`: Aplicação principal do Django (Models, Views, URLs).
+*   `analytics/`: Aplicação principal do Django (Models, Views, URLs, API via `api.py`).
 *   `config/`: Configurações principais do projeto Django (`settings.py`, `urls.py`).
 *   `templates/`: Componentes visuais HTML utilizando Bootstrap 5.
     *   `dashboard/`: Telas e visões analíticas.
     *   `base.html`: Layout mestre.
     *   `login.html`: Tela de autenticação.
-*   `seed.py`: Script para popular dados iniciais.
+*   `seed.py`: Script para popular dados iniciais no banco.
+*   `gerar_json.py`: Script para gerar massa de dados (JSON) visando testes de ingestão da API REST.

@@ -6,13 +6,12 @@
 
 Definir a arquitetura da aplicação web QAgent Analytics, responsável por consumir dados analíticos armazenados em banco de dados e renderizar dashboards para monitoramento da atuação do QAgent.
 
-Nesta primeira versão da aplicação:
+Nesta evolução da aplicação:
 
-* Não haverá cadastro de projetos;
-* Não haverá integração direta com APIs externas;
-* O foco será exclusivamente leitura analítica dos dados;
-* Os dados serão consumidos diretamente do banco de dados;
-* A aplicação será somente uma camada de visualização e monitoramento.
+* Não haverá cadastro de projetos via interface visual (apenas visualização);
+* A aplicação atuará como uma camada de visualização e monitoramento dos dados analíticos;
+* **Haverá uma API REST para ingestão de dados**, permitindo que o QAgent (ou outras ferramentas) envie os resultados das execuções e logs de erro diretamente para o banco de dados da aplicação;
+* O dashboard continuará consumindo os dados diretamente do banco para renderização.
 
 ---
 
@@ -23,28 +22,29 @@ A aplicação seguirá uma arquitetura monolítica simples baseada no padrão MT
 ## Camadas da Aplicação
 
 ```text
-┌──────────────────────────┐
-│        Frontend          │
-│  HTML + Bootstrap 5      │
-└────────────┬─────────────┘
-             │
-             ▼
-┌──────────────────────────┐
-│      Django Views        │
-│  Regras de apresentação  │
-└────────────┬─────────────┘
-             │
-             ▼
-┌──────────────────────────┐
-│      Django ORM          │
-│   Consulta aos dados     │
-└────────────┬─────────────┘
-             │
-             ▼
-┌──────────────────────────┐
-│      Banco de Dados      │
-│   Dados analíticos QA    │
-└──────────────────────────┘
+      ┌────────────────┐           ┌──────────────────────────┐
+      │  Agente (QA)   │           │        Frontend          │
+      │ Envia dados    │           │  HTML + Bootstrap 5      │
+      └───────┬────────┘           └────────────┬─────────────┘
+              │                                 │
+              ▼ (POST)                          ▼ (GET)
+┌──────────────────────────┐       ┌──────────────────────────┐
+│        API REST          │       │      Django Views        │
+│  (Django REST Framework) │       │  Regras de apresentação  │
+└────────────┬─────────────┘       └────────────┬─────────────┘
+             │                                  │
+             ▼                                  ▼
+┌──────────────────────────┐       ┌──────────────────────────┐
+│      Django ORM          │       │      Django ORM          │
+│  Gravação dos dados      │       │   Consulta aos dados     │
+└────────────┬─────────────┘       └────────────┬─────────────┘
+             │                                  │
+             └───────────────┬──────────────────┘
+                             ▼
+               ┌──────────────────────────┐
+               │      Banco de Dados      │
+               │   Dados analíticos QA    │
+               └──────────────────────────┘
 ```
 
 ---
@@ -53,13 +53,14 @@ A aplicação seguirá uma arquitetura monolítica simples baseada no padrão MT
 
 ## Backend
 
-| Tecnologia   | Finalidade               |
-| ------------ | ------------------------ |
-| Python 3.12+ | Linguagem principal      |
-| Django 5+    | Framework web            |
-| Django ORM   | Persistência e consultas |
-| SQLite       | Banco local inicial      |
-| PostgreSQL   | Evolução futura          |
+| Tecnologia            | Finalidade                           |
+| --------------------- | ------------------------------------ |
+| Python 3.12+          | Linguagem principal                  |
+| Django 5+             | Framework web                        |
+| Django REST Framework | Criação da API REST para ingestão    |
+| Django ORM            | Persistência e consultas             |
+| SQLite                | Banco local inicial                  |
+| PostgreSQL            | Evolução futura                      |
 
 ---
 
@@ -211,6 +212,26 @@ Permitir inspeção administrativa dos dados.
 
 ---
 
+# 4.7 API REST (Ingestão de Dados)
+
+## Objetivo
+
+Prover endpoints para que o agente de qualidade (QAgent) ou sistemas externos possam registrar automaticamente os resultados das execuções de testes e seus logs.
+
+## Estratégia
+
+Utilizar o Django REST Framework (DRF) para criar rotas seguras que recebam os payloads em formato JSON e os persistam via ORM.
+
+## Autenticação da API
+
+* Autenticação via Token (TokenAuthentication do DRF) para garantir que apenas agentes autorizados possam enviar dados.
+
+## Endpoints Principais
+
+* `POST /api/v1/execucoes/` — Registra execuções de teste (suporta tanto um único objeto quanto uma lista/array de execuções) e, opcionalmente, recebe de forma aninhada os logs de erro associados a cada execução.
+
+---
+
 # 5. Estrutura do Projeto
 
 ```text
@@ -229,6 +250,7 @@ qagent_analytics/
 ├── analytics/
 │   ├── models.py
 │   ├── views.py
+│   ├── api.py
 │   ├── urls.py
 │   ├── admin.py
 │   ├── services.py
@@ -285,7 +307,7 @@ class LogErro(models.Model):
 
 # 7. Fluxo Arquitetural
 
-## Fluxo de Requisição
+## Fluxo de Consulta (Usuário no Dashboard)
 
 ```text
 Usuário acessa dashboard
@@ -307,12 +329,35 @@ Renderização Bootstrap
 Resposta HTTP
 ```
 
+## Fluxo de Ingestão (QAgent via API)
+
+```text
+QAgent finaliza testes
+        ↓
+Gera payload JSON
+        ↓
+Requisição HTTP POST (com Token)
+        ↓
+Django URL Dispatcher (/api/v1/...)
+        ↓
+DRF ViewSet/APIView
+        ↓
+Validação via Serializer
+        ↓
+Gravação via Django ORM
+        ↓
+Banco de Dados
+        ↓
+Resposta HTTP 201 Created
+```
+
 ---
 
 # 8. Estrutura de URLs
 
 ```python
 urlpatterns = [
+    # URLs do Dashboard (Frontend)
     path('', views.dashboard, name='dashboard'),
 
     path('login/', auth_views.LoginView.as_view(), name='login'),
@@ -320,6 +365,9 @@ urlpatterns = [
 
     path('execucoes/', views.lista_execucoes, name='lista_execucoes'),
     path('execucoes/<int:id>/', views.detalhe_execucao, name='detalhe_execucao'),
+    
+    # URLs da API REST (Ingestão)
+    path('api/v1/execucoes/', api.ExecucaoTesteViewSet.as_view({'post': 'create'}), name='api_create_execucao'),
 ]
 ```
 
@@ -405,9 +453,8 @@ A interface deverá ser totalmente responsiva utilizando Bootstrap.
 
 A arquitetura deverá permitir evolução futura para:
 
-* Integração com APIs do QAgent;
 * Dashboards em tempo real;
-* APIs REST;
+* Consumo externo por terceiros (ampliação das APIs REST);
 * Gráficos interativos;
 * WebSockets;
 * Integração CI/CD;
@@ -434,13 +481,15 @@ A arquitetura deverá permitir evolução futura para:
 
 ## A aplicação deverá:
 
-* Utilizar exclusivamente Django como backend;
-* Utilizar templates HTML server-side;
+* Utilizar exclusivamente Django como framework principal;
+* Utilizar Django REST Framework (DRF) para ingestão de dados;
+* Utilizar templates HTML server-side para renderização web;
 * Utilizar Bootstrap para estilização;
 * Utilizar ORM nativo;
-* Utilizar autenticação nativa;
+* Utilizar autenticação nativa para o painel web;
+* Utilizar autenticação via Token para a API;
 * Utilizar Django Admin;
-* Consumir dados diretamente do banco.
+* Consumir dados diretamente do banco (pela view) para a renderização.
 
 ---
 
@@ -452,10 +501,11 @@ A arquitetura deverá permitir evolução futura para:
 * Vue;
 * Angular;
 * Microservices;
-* APIs REST complexas;
 * Mensageria;
 * Docker obrigatório;
 * Arquitetura distribuída.
+
+*Nota: O uso de API REST é restrito apenas à rota de ingestão de dados via DRF. Não construir APIs REST complexas de consulta para SPA/frontend nesta versão.*
 
 ---
 
